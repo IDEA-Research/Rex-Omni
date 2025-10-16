@@ -66,11 +66,12 @@
 ## 1. Installation ⛳️
 
 ```bash
-conda create -n rexomni -m python=3.10
-pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
 git clone https://github.com/IDEA-Research/Rex-Omni.git
 cd Rex-Omni
-pip install -v -e .
+conda create -n rexomni python=3.10 -y
+conda activate rexomni
+pip install torch==2.7.0 torchvision --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt
 ```
 
 Test Installation
@@ -193,10 +194,10 @@ We provide an interactive Gradio demo that allows you to test all Rex-Omni capab
 ### Quick Start
 ```bash
 # Launch the demo
-CUDA_VISIBLE_DEVICES=0 python demo/gradio_demo.py --model_path IDEA-Research/Rex-Omni
+CUDA_VISIBLE_DEVICES=0 python app.py --model_path IDEA-Research/Rex-Omni
 
 # With custom settings
-CUDA_VISIBLE_DEVICES=0 python demo/gradio_demo.py \
+CUDA_VISIBLE_DEVICES=0 python app.py \
     --model_path IDEA-Research/Rex-Omni \
     --backend vllm \
     --server_name 0.0.0.0 \
