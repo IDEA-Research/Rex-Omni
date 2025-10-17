@@ -110,11 +110,12 @@ def RexOmniVisualize(
 def _load_font(font_size: int) -> ImageFont.ImageFont:
     """Load font for drawing"""
     font_paths = [
+        "C:/Windows/Fonts/simhei.ttf",
+        "C:/Windows/Fonts/arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/System/Library/Fonts/Arial.ttf",
         "/System/Library/Fonts/Helvetica.ttc",
         "arial.ttf",
-        "C:/Windows/Fonts/arial.ttf",
     ]
 
     font = None

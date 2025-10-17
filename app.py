@@ -15,6 +15,9 @@ from PIL import Image
 from rex_omni import RexOmniVisualize, RexOmniWrapper, TaskType
 from rex_omni.tasks import KEYPOINT_CONFIGS, TASK_CONFIGS, get_task_config
 
+import gc
+import torch
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Rex Omni Gradio Demo")
@@ -443,6 +446,10 @@ def run_inference(
                 draw_width=draw_width,
                 show_labels=show_labels,
             )
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
             return vis_image, raw_output
         except Exception as e:
             return image, f"Visualization failed: {str(e)}\n\nRaw output:\n{raw_output}"
@@ -502,7 +509,7 @@ def load_example_image(image_path, visual_prompt_boxes=None):
         from PIL import Image
 
         # Construct full path
-        full_path = os.path.join(os.path.dirname(__file__), "..", image_path)
+        full_path = os.path.join(os.path.dirname(__file__), image_path)
         if os.path.exists(full_path):
             image = Image.open(full_path).convert("RGB")
 
@@ -930,4 +937,5 @@ if __name__ == "__main__":
         server_port=args.server_port,
         share=False,
         debug=True,
+        inbrowser=True,
     )
