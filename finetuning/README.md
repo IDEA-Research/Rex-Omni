@@ -17,7 +17,8 @@ We provide code for both SFT and GRPO finetuning of the Rex-Omni model.
   - [Stage 2: GRPO Finetuning](#stage-2-grpo-finetuning)
     - [2.1 Download Toy Data](#21-download-toy-data)
     - [2.2 Launch Training](#22-launch-training)
-    - [2.3 Reward Function](#23-reward-function)
+    - [2.3 Convert Checkpoint to Huggingface Version](#23-convert-checkpoint-to-huggingface-version)
+    - [2.4 Reward Function](#24-reward-function)
 
 ---
 
@@ -238,7 +239,12 @@ bash scripts/grpo.sh
 **Main parameter descriptions**:
 - `--data.config_path`: Specify the configuration file path (contains dataset configuration)
 
-### 2.3 Reward Function
+### 2.3 Convert Checkpoint to Huggingface Version
+python tools/merge_rl_checkpoints_to_hg_version.py --local_dir PATH_TO_CHECKPOINT_AT_ACTOR_DIR
+
+--local_dir: The path to the checkpoint at the actor directory.
+
+### 2.4 Reward Function
 
 We implement the following reward functions in `verl/configs/reward_func.py`:
 - Box IoU

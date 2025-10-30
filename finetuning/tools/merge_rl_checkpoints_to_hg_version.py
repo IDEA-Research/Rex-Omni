@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--local_dir",
-        default="work_dirs/det2.0/_3_large_training/3.5_3B_20M_with_neg/grpo_post_training/_2_full_post_training/grpo_style_3_ablation/global_step_650/actor",
+        default="../actor",
         type=str,
         help="The path for your saved model",
     )
