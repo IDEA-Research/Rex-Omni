@@ -27,7 +27,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 *.tsv
-*.json
 *.pth
 *.jsonl
 # PyInstaller

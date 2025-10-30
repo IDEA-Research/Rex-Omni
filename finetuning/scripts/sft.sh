@@ -1,21 +1,18 @@
 NNODES=1
 GPUS_PER_NODE=8
 
-hostname
-
-export MASTER_ADDR=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
-export MASTER_PORT=52345
+export MASTER_ADDR=localhost
+export MASTER_PORT=29500
 
 run_name="rexomni_sft"
 
 torchrun \
     --nnodes=${NNODES} \
-    --node_rank=${SLURM_PROCID} \
     --nproc_per_node=${GPUS_PER_NODE} \
     --master_addr=${MASTER_ADDR} \
     --master_port=${MASTER_PORT} train.py \
     --config configs/sft.py \
-    --deepspeed scripts/zero3_offload.json \
+    --deepspeed scripts/zero2.json \
     --data_flatten False \
     --tune_mm_vision True \
     --tune_mm_mlp True \

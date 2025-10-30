@@ -30,7 +30,6 @@ MANIFEST
 evaluation/eval_other_methods/seed-vl1.5/results
 configs/_3_large_training/3.5exp/visualize_data_before_start_class_label/
 *.tsv
-*.json
 *.jpg
 *.pth
 *.jsonl
