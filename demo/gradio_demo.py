@@ -20,7 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Rex Omni Gradio Demo")
     parser.add_argument(
         "--model_path",
-        default="/comp_robot/jiangqing/projects/2023/research/R1/QwenSFTOfficial/open_source/finetuning/work_dirs/det2.0/_3_large_training/3.5_3B_20M_with_neg",
+        default="IDEA-Research/Rex-Omni",
         help="Model path or HuggingFace repo ID",
     )
     parser.add_argument(
@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument("--repetition_penalty", type=float, default=1.05)
     parser.add_argument("--min_pixels", type=int, default=16 * 28 * 28)
     parser.add_argument("--max_pixels", type=int, default=2560 * 28 * 28)
-    parser.add_argument("--server_name", type=str, default="192.168.81.138")
+    parser.add_argument("--server_name", type=str, default="0.0.0.0")
     parser.add_argument("--server_port", type=int, default=4121)
     args = parser.parse_args()
     return args
