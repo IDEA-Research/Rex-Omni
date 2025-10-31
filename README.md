@@ -20,6 +20,12 @@
       alt="RexThinker Paper on arXiv"
     />
   </a>
+  <a href="https://huggingface.co/IDEA-Research/Rex-Omni-AWQ">
+    <img 
+        src="https://img.shields.io/badge/RexOmni_AWQ-Weight-orange?logo=huggingface&logoColor=yellow" 
+        alt="RexThinker weight on Hugging Face"
+    />
+  </a>
   <a href="https://huggingface.co/IDEA-Research/Rex-Omni">
     <img 
         src="https://img.shields.io/badge/RexOmni-Weight-orange?logo=huggingface&logoColor=yellow" 
@@ -43,6 +49,7 @@
 
 
 # News 🎉
+- [2025-10-31] We release the AWQ quantized version of Rex-Omni, which saves 50% of the storage space. [Rex-Omni-AWQ](https://huggingface.co/IDEA-Research/Rex-Omni-AWQ)
 - [2025-10-29] Fine-tuning code is now [available](finetuning/README.md).
 - [2025-10-17] Evaluation code and dataset is now [available](evaluation/README.md).
 - [2025-10-15] Rex-Omni is released.
@@ -70,7 +77,7 @@
 ## TODO LIST 📝
 - [x] Add Evaluation Code
 - [x] Add Fine-tuning Code
-- [ ] Add Quantilized Rex-Omni
+- [x] Add Quantilized Rex-Omni
 
 ## 1. Installation ⛳️
 
@@ -101,6 +108,18 @@ rex = RexOmniWrapper(
     model_path="IDEA-Research/Rex-Omni",   # HF repo or local path
     backend="transformers",                # or "vllm" for high-throughput inference
     # Inference/generation controls (applied across backends)
+    max_tokens=2048,
+    temperature=0.0,
+    top_p=0.05,
+    top_k=1,
+    repetition_penalty=1.05,
+)
+
+# If you are using the AWQ quantized version of Rex-Omni, you can use the following code:
+rex = RexOmniWrapper(
+    model_path="IDEA-Research/Rex-Omni-AWQ",
+    backend="vllm",
+    quantization="awq",
     max_tokens=2048,
     temperature=0.0,
     top_p=0.05,

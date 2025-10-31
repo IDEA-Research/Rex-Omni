@@ -36,6 +36,7 @@ class RexOmniWrapper:
         repetition_penalty: float = 1.05,
         skip_special_tokens: bool = False,
         stop: Optional[List[str]] = None,
+        quantization: str = None,
         **kwargs,
     ):
         """
@@ -54,6 +55,7 @@ class RexOmniWrapper:
             repetition_penalty: Penalty for repetition
             skip_special_tokens: Whether to skip special tokens in output
             stop: Stop sequences for generation
+            quantization: Quantization type
             **kwargs: Additional arguments for model initialization
         """
         self.model_path = model_path
@@ -70,6 +72,7 @@ class RexOmniWrapper:
         self.repetition_penalty = repetition_penalty
         self.skip_special_tokens = skip_special_tokens
         self.stop = stop or ["<|im_end|>"]
+        self.quantization = quantization
 
         # Initialize model and processor
         self._initialize_model(**kwargs)
@@ -94,6 +97,7 @@ class RexOmniWrapper:
                 gpu_memory_utilization=kwargs.get("gpu_memory_utilization", 0.8),
                 tensor_parallel_size=kwargs.get("tensor_parallel_size", 1),
                 trust_remote_code=kwargs.get("trust_remote_code", True),
+                quantization=self.quantization,
                 **{
                     k: v
                     for k, v in kwargs.items()

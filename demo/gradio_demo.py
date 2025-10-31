@@ -20,16 +20,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Rex Omni Gradio Demo")
     parser.add_argument(
         "--model_path",
-        default="/comp_robot/jiangqing/projects/2023/research/R1/QwenSFTOfficial/open_source/finetuning/work_dirs/det2.0/_3_large_training/3.5_3B_20M_with_neg",
+        default="IDEA-Research/Rex-Omni-AWQ",
         help="Model path or HuggingFace repo ID",
     )
     parser.add_argument(
         "--backend",
         type=str,
-        default="transformers",
+        default="vllm",
         choices=["transformers", "vllm"],
         help="Backend to use for inference",
     )
+    parser.add_argument("--quantization", type=str, default="awq")
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top_p", type=float, default=0.05)
     parser.add_argument("--top_k", type=int, default=1)
@@ -37,8 +38,8 @@ def parse_args():
     parser.add_argument("--repetition_penalty", type=float, default=1.05)
     parser.add_argument("--min_pixels", type=int, default=16 * 28 * 28)
     parser.add_argument("--max_pixels", type=int, default=2560 * 28 * 28)
-    parser.add_argument("--server_name", type=str, default="192.168.81.138")
-    parser.add_argument("--server_port", type=int, default=4121)
+    parser.add_argument("--server_name", type=str, default="0.0.0.0")
+    parser.add_argument("--server_port", type=int, default=1234)
     args = parser.parse_args()
     return args
 
@@ -353,102 +354,96 @@ def run_inference(
     if image is None:
         return None, "Please upload an image first."
 
-    try:
-        # Convert numpy array to PIL Image if needed
-        if isinstance(image, np.ndarray):
-            image = Image.fromarray(image)
+    # Convert numpy array to PIL Image if needed
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(image)
 
-        image_width, image_height = image.size
+    image_width, image_height = image.size
 
-        # Parse visual prompts if needed
-        visual_prompt_boxes = []
-        if task_selection == "Visual Prompting":
-            # Check if we have predefined visual prompt boxes from examples
-            if hasattr(image, "_example_visual_prompts"):
-                visual_prompt_boxes = image._example_visual_prompts
-            elif visual_prompt_data is not None and "points" in visual_prompt_data:
-                visual_prompt_boxes = parse_visual_prompt(visual_prompt_data["points"])
+    # Parse visual prompts if needed
+    visual_prompt_boxes = []
+    if task_selection == "Visual Prompting":
+        # Check if we have predefined visual prompt boxes from examples
+        if hasattr(image, "_example_visual_prompts"):
+            visual_prompt_boxes = image._example_visual_prompts
+        elif visual_prompt_data is not None and "points" in visual_prompt_data:
+            visual_prompt_boxes = parse_visual_prompt(visual_prompt_data["points"])
 
-        # Determine task type and categories based on task selection
-        if task_selection == "OCR":
-            # For OCR, use the selected output format to determine task type
-            task_type = OCR_OUTPUT_FORMATS[ocr_output_format]["task_type"]
-            task_key = task_type.value
-            # Use granularity level to determine categories
-            categories_list = [OCR_GRANULARITY_LEVELS[ocr_granularity]["categories"]]
-        elif task_selection == "Visual Prompting":
-            # For visual prompting, we don't need explicit categories
-            task_key = "visual_prompting"
+    # Determine task type and categories based on task selection
+    if task_selection == "OCR":
+        # For OCR, use the selected output format to determine task type
+        task_type = OCR_OUTPUT_FORMATS[ocr_output_format]["task_type"]
+        task_key = task_type.value
+        # Use granularity level to determine categories
+        categories_list = [OCR_GRANULARITY_LEVELS[ocr_granularity]["categories"]]
+    elif task_selection == "Visual Prompting":
+        # For visual prompting, we don't need explicit categories
+        task_key = "visual_prompting"
+        categories_list = ["object"]
+
+        # Check if visual prompt boxes are provided
+        if not visual_prompt_boxes:
+            return (
+                None,
+                "Please draw bounding boxes on the image to provide visual examples for Visual Prompting task.",
+            )
+    elif task_selection == "Keypoint":
+        task_key = "keypoint"
+        categories_list = [keypoint_type] if keypoint_type else ["person"]
+    else:
+        # For other tasks, get task type from demo config
+        demo_config = DEMO_TASK_CONFIGS[task_selection]
+        task_type = demo_config["task_type"]
+        task_key = task_type.value
+
+        # Split categories by comma and clean up
+        categories_list = [cat.strip() for cat in categories.split(",") if cat.strip()]
+        if not categories_list:
             categories_list = ["object"]
 
-            # Check if visual prompt boxes are provided
-            if not visual_prompt_boxes:
-                return (
-                    None,
-                    "Please draw bounding boxes on the image to provide visual examples for Visual Prompting task.",
-                )
-        elif task_selection == "Keypoint":
-            task_key = "keypoint"
-            categories_list = [keypoint_type] if keypoint_type else ["person"]
-        else:
-            # For other tasks, get task type from demo config
-            demo_config = DEMO_TASK_CONFIGS[task_selection]
-            task_type = demo_config["task_type"]
-            task_key = task_type.value
+    # Run inference
+    if task_selection == "Visual Prompting":
+        results = rex_model.inference(
+            images=image,
+            task=task_key,
+            categories=categories_list,
+            visual_prompt_boxes=visual_prompt_boxes,
+        )
+    elif task_selection == "Keypoint":
+        results = rex_model.inference(
+            images=image,
+            task=task_key,
+            categories=categories_list,
+            keypoint_type=keypoint_type if keypoint_type else "person",
+        )
+    else:
+        results = rex_model.inference(
+            images=image, task=task_key, categories=categories_list
+        )
 
-            # Split categories by comma and clean up
-            categories_list = [
-                cat.strip() for cat in categories.split(",") if cat.strip()
-            ]
-            if not categories_list:
-                categories_list = ["object"]
+    result = results[0]
 
-        # Run inference
-        if task_selection == "Visual Prompting":
-            results = rex_model.inference(
-                images=image,
-                task=task_key,
-                categories=categories_list,
-                visual_prompt_boxes=visual_prompt_boxes,
-            )
-        elif task_selection == "Keypoint":
-            results = rex_model.inference(
-                images=image,
-                task=task_key,
-                categories=categories_list,
-                keypoint_type=keypoint_type if keypoint_type else "person",
-            )
-        else:
-            results = rex_model.inference(
-                images=image, task=task_key, categories=categories_list
-            )
+    # Check if inference was successful
+    if not result.get("success", False):
+        error_msg = result.get("error", "Unknown error occurred during inference")
+        return None, f"Inference failed: {error_msg}"
 
-        result = results[0]
+    # Get predictions and raw output
+    predictions = result["extracted_predictions"]
+    raw_output = result["raw_output"]
 
-        # Check if inference was successful
-        if not result.get("success", False):
-            error_msg = result.get("error", "Unknown error occurred during inference")
-            return None, f"Inference failed: {error_msg}"
+    # Create visualization
 
-        # Get predictions and raw output
-        predictions = result["extracted_predictions"]
-        raw_output = result["raw_output"]
+    vis_image = RexOmniVisualize(
+        image=image,
+        predictions=predictions,
+        font_size=font_size,
+        draw_width=draw_width,
+        show_labels=show_labels,
+    )
+    return vis_image, raw_output
 
-        # Create visualization
-        try:
-            vis_image = RexOmniVisualize(
-                image=image,
-                predictions=predictions,
-                font_size=font_size,
-                draw_width=draw_width,
-                show_labels=show_labels,
-            )
-            return vis_image, raw_output
-        except Exception as e:
-            return image, f"Visualization failed: {str(e)}\n\nRaw output:\n{raw_output}"
-
-    except Exception as e:
-        return None, f"Error during inference: {str(e)}"
+    return None, f"Error during inference: {str(e)}"
 
 
 def update_interface(task_selection):
@@ -917,6 +912,7 @@ if __name__ == "__main__":
         repetition_penalty=args.repetition_penalty,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
+        quantization=args.quantization,
     )
 
     print("✅ Model initialized successfully!")
