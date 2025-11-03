@@ -119,7 +119,7 @@ class GroundingTSVDataset(Dataset):
         task_fn=None,
         system_message="You are a helpful assistant.",
         ratio_range=[0.0, 1.0],
-        ori_box_format="xywh",
+        ori_box_format="xyxy",
         dataset_name=None,
         if_convert_raw_data=True,
         max_length=4096,
