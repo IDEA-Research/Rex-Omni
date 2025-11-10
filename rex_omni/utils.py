@@ -47,6 +47,7 @@ def RexOmniVisualize(
     draw_width: int = 6,
     show_labels: bool = True,
     custom_colors: Optional[Dict[str, Tuple[int, int, int]]] = None,
+    font_path: Optional[str] = None,
 ) -> Image.Image:
     """
     Visualize predictions on image
@@ -58,6 +59,7 @@ def RexOmniVisualize(
         draw_width: Line width for drawing
         show_labels: Whether to show text labels
         custom_colors: Custom colors for categories
+        font_path: Path to font file
 
     Returns:
         Image with visualizations
@@ -67,7 +69,7 @@ def RexOmniVisualize(
     draw = ImageDraw.Draw(vis_image)
 
     # Load font
-    font = _load_font(font_size)
+    font = _load_font(font_size, font_path)
 
     # Color generator
     color_generator = ColorGenerator("text")
@@ -107,7 +109,7 @@ def RexOmniVisualize(
     return vis_image
 
 
-def _load_font(font_size: int) -> ImageFont.ImageFont:
+def _load_font(font_size: int, font_path: Optional[str] = None) -> ImageFont.ImageFont:
     """Load font for drawing"""
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
@@ -115,12 +117,13 @@ def _load_font(font_size: int) -> ImageFont.ImageFont:
         "/System/Library/Fonts/Helvetica.ttc",
         "arial.ttf",
         "C:/Windows/Fonts/arial.ttf",
+        font_path,
     ]
 
     font = None
-    for font_path in font_paths:
+    for font_path_ in font_paths:
         try:
-            font = ImageFont.truetype(font_path, font_size)
+            font = ImageFont.truetype(font_path_, font_size)
             break
         except:
             continue
@@ -465,4 +468,3 @@ def format_predictions_for_display(predictions: Dict[str, List[Dict]]) -> str:
                 )
 
     return "\n".join(lines)
- 
