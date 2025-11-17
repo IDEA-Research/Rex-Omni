@@ -11,9 +11,91 @@
         justify-content: flex-start;
         align-items: center;
       }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+      }
+      form {
+        margin-bottom: 20px;
+      }
+      input[type="file"] {
+        display: block;
+        margin-bottom: 10px;
+      }
+      input[type="submit"] {
+        background: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .image-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .flash {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+      }
+      .flash.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .flash.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
     </style>
   </head>
   <body>
-    <h1>Hello there my medieval</h1>
+    <h1>Medieval Pages</h1>
+
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="flash {{ 'success' if 'succes' in message else 'error' }}">
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" />
+        <input type="submit" value="Incarca" />
+      </form>
+
+      <hr />
+
+      {% if filename %}
+      <div class="image-container">
+        <h2>Imaginea încărcată:</h2>
+
+        <img
+          src="{{ url_for('static', filename='uploads/' + filename) }}"
+          alt="Imaginea incarcata"
+        />
+      </div>
+      {% else %}
+      <div class="image-container">
+        <p>Nicio imagine nu a fost incarcata inca</p>
+      </div>
+      {% endif %}
+    </div>
   </body>
 </html>
