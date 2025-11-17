@@ -11,91 +11,120 @@
         justify-content: flex-start;
         align-items: center;
       }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-        background: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
+
+      h1,
+      h2 {
         text-align: center;
       }
+
       form {
         margin-bottom: 20px;
-      }
-      input[type="file"] {
-        display: block;
-        margin-bottom: 10px;
-      }
-      input[type="submit"] {
-        background: #007bff;
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      .image-container {
-        margin-top: 20px;
         text-align: center;
       }
-      img {
+
+      .flash {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .image-comparison {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 20px;
+      }
+
+      .image-box {
+        flex-basis: 48%;
+        min-width: 300px;
+        box-sizing: border-box;
+        padding: 10px;
+        text-align: center;
+      }
+
+      .image-box h3 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      .image-box img {
         max-width: 100%;
         height: auto;
         border: 1px solid #ddd;
         border-radius: 4px;
       }
-      .flash {
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 4px;
+
+      .raw-output {
+        margin-top: 20px;
       }
-      .flash.success {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+
+      .raw-output h2 {
+        text-align: left;
+        color: #555;
       }
-      .flash.error {
-        background: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+
+      .raw-output pre {
+        background-color: #272822;
+        color: #f8f8f2;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
       }
     </style>
   </head>
   <body>
-    <h1>Medieval Pages</h1>
-
     <div class="container">
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %}
-      <div class="flash {{ 'success' if 'succes' in message else 'error' }}">
-        {{ message }}
-      </div>
+      <h1>Medieval Pages</h1>
+
+      {% with messages = get_flashed_messages() %} {% if messages %} {% for
+      message in messages %}
+      <div class="flash">{{ message }}</div>
       {% endfor %} {% endif %} {% endwith %}
 
       <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file" />
-        <input type="submit" value="Incarca" />
+        <input type="file" name="file" required />
+        <input type="submit" value="Încarcă și procesează" />
       </form>
 
+      {% if original_filename %}
       <hr />
+      <h2>Rezultate Procesare</h2>
 
-      {% if filename %}
-      <div class="image-container">
-        <h2>Imaginea încărcată:</h2>
+      <div class="image-comparison">
+        <div class="image-box">
+          <h3>Imagine Originală</h3>
 
-        <img
-          src="{{ url_for('static', filename='uploads/' + filename) }}"
-          alt="Imaginea incarcata"
-        />
+          <img
+            src="{{ url_for('static', filename='uploads/' + original_filename) }}"
+            alt="Imaginea Originală"
+          />
+        </div>
+
+        {% if visualized_filename %}
+        <div class="image-box">
+          <h3>Rezultat Rex-Omni (Vizualizare)</h3>
+
+          <img
+            src="{{ url_for('static', filename='uploads/' + visualized_filename) }}"
+            alt="Rezultat OCR"
+          />
+        </div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="image-container">
-        <p>Nicio imagine nu a fost incarcata inca</p>
+
+      {% if raw_output %}
+      <div class="raw-output">
+        <h2>Raw Output Model</h2>
+        <pre><code>{{ raw_output }}</code></pre>
       </div>
-      {% endif %}
+      {% endif %} {% endif %}
     </div>
   </body>
 </html>
