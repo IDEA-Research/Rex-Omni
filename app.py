@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import gc
 import json
 import os
 import re
@@ -9,6 +10,7 @@ from typing import Any, Dict, List
 
 import gradio as gr
 import numpy as np
+import torch
 from gradio_image_prompter import ImagePrompter
 from PIL import Image
 
@@ -20,17 +22,16 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Rex Omni Gradio Demo")
     parser.add_argument(
         "--model_path",
-        default="IDEA-Research/Rex-Omni-AWQ",
+        default="IDEA-Research/Rex-Omni",
         help="Model path or HuggingFace repo ID",
     )
     parser.add_argument(
         "--backend",
         type=str,
-        default="vllm",
+        default="transformers",
         choices=["transformers", "vllm"],
         help="Backend to use for inference",
     )
-    parser.add_argument("--quantization", type=str, default="awq")
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top_p", type=float, default=0.05)
     parser.add_argument("--top_k", type=int, default=1)
@@ -39,7 +40,7 @@ def parse_args():
     parser.add_argument("--min_pixels", type=int, default=16 * 28 * 28)
     parser.add_argument("--max_pixels", type=int, default=2560 * 28 * 28)
     parser.add_argument("--server_name", type=str, default="0.0.0.0")
-    parser.add_argument("--server_port", type=int, default=1234)
+    parser.add_argument("--server_port", type=int, default=6121)
     args = parser.parse_args()
     return args
 
@@ -354,96 +355,106 @@ def run_inference(
     if image is None:
         return None, "Please upload an image first."
 
-    # Convert numpy array to PIL Image if needed
-    if isinstance(image, np.ndarray):
-        image = Image.fromarray(image)
+    try:
+        # Convert numpy array to PIL Image if needed
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image)
 
-    image_width, image_height = image.size
+        image_width, image_height = image.size
 
-    # Parse visual prompts if needed
-    visual_prompt_boxes = []
-    if task_selection == "Visual Prompting":
-        # Check if we have predefined visual prompt boxes from examples
-        if hasattr(image, "_example_visual_prompts"):
-            visual_prompt_boxes = image._example_visual_prompts
-        elif visual_prompt_data is not None and "points" in visual_prompt_data:
-            visual_prompt_boxes = parse_visual_prompt(visual_prompt_data["points"])
+        # Parse visual prompts if needed
+        visual_prompt_boxes = []
+        if task_selection == "Visual Prompting":
+            # Check if we have predefined visual prompt boxes from examples
+            if hasattr(image, "_example_visual_prompts"):
+                visual_prompt_boxes = image._example_visual_prompts
+            elif visual_prompt_data is not None and "points" in visual_prompt_data:
+                visual_prompt_boxes = parse_visual_prompt(visual_prompt_data["points"])
 
-    # Determine task type and categories based on task selection
-    if task_selection == "OCR":
-        # For OCR, use the selected output format to determine task type
-        task_type = OCR_OUTPUT_FORMATS[ocr_output_format]["task_type"]
-        task_key = task_type.value
-        # Use granularity level to determine categories
-        categories_list = [OCR_GRANULARITY_LEVELS[ocr_granularity]["categories"]]
-    elif task_selection == "Visual Prompting":
-        # For visual prompting, we don't need explicit categories
-        task_key = "visual_prompting"
-        categories_list = ["object"]
-
-        # Check if visual prompt boxes are provided
-        if not visual_prompt_boxes:
-            return (
-                None,
-                "Please draw bounding boxes on the image to provide visual examples for Visual Prompting task.",
-            )
-    elif task_selection == "Keypoint":
-        task_key = "keypoint"
-        categories_list = [keypoint_type] if keypoint_type else ["person"]
-    else:
-        # For other tasks, get task type from demo config
-        demo_config = DEMO_TASK_CONFIGS[task_selection]
-        task_type = demo_config["task_type"]
-        task_key = task_type.value
-
-        # Split categories by comma and clean up
-        categories_list = [cat.strip() for cat in categories.split(",") if cat.strip()]
-        if not categories_list:
+        # Determine task type and categories based on task selection
+        if task_selection == "OCR":
+            # For OCR, use the selected output format to determine task type
+            task_type = OCR_OUTPUT_FORMATS[ocr_output_format]["task_type"]
+            task_key = task_type.value
+            # Use granularity level to determine categories
+            categories_list = [OCR_GRANULARITY_LEVELS[ocr_granularity]["categories"]]
+        elif task_selection == "Visual Prompting":
+            # For visual prompting, we don't need explicit categories
+            task_key = "visual_prompting"
             categories_list = ["object"]
 
-    # Run inference
-    if task_selection == "Visual Prompting":
-        results = rex_model.inference(
-            images=image,
-            task=task_key,
-            categories=categories_list,
-            visual_prompt_boxes=visual_prompt_boxes,
-        )
-    elif task_selection == "Keypoint":
-        results = rex_model.inference(
-            images=image,
-            task=task_key,
-            categories=categories_list,
-            keypoint_type=keypoint_type if keypoint_type else "person",
-        )
-    else:
-        results = rex_model.inference(
-            images=image, task=task_key, categories=categories_list
-        )
+            # Check if visual prompt boxes are provided
+            if not visual_prompt_boxes:
+                return (
+                    None,
+                    "Please draw bounding boxes on the image to provide visual examples for Visual Prompting task.",
+                )
+        elif task_selection == "Keypoint":
+            task_key = "keypoint"
+            categories_list = [keypoint_type] if keypoint_type else ["person"]
+        else:
+            # For other tasks, get task type from demo config
+            demo_config = DEMO_TASK_CONFIGS[task_selection]
+            task_type = demo_config["task_type"]
+            task_key = task_type.value
 
-    result = results[0]
+            # Split categories by comma and clean up
+            categories_list = [
+                cat.strip() for cat in categories.split(",") if cat.strip()
+            ]
+            if not categories_list:
+                categories_list = ["object"]
 
-    # Check if inference was successful
-    if not result.get("success", False):
-        error_msg = result.get("error", "Unknown error occurred during inference")
-        return None, f"Inference failed: {error_msg}"
+        # Run inference
+        if task_selection == "Visual Prompting":
+            results = rex_model.inference(
+                images=image,
+                task=task_key,
+                categories=categories_list,
+                visual_prompt_boxes=visual_prompt_boxes,
+            )
+        elif task_selection == "Keypoint":
+            results = rex_model.inference(
+                images=image,
+                task=task_key,
+                categories=categories_list,
+                keypoint_type=keypoint_type if keypoint_type else "person",
+            )
+        else:
+            results = rex_model.inference(
+                images=image, task=task_key, categories=categories_list
+            )
 
-    # Get predictions and raw output
-    predictions = result["extracted_predictions"]
-    raw_output = result["raw_output"]
+        result = results[0]
 
-    # Create visualization
+        # Check if inference was successful
+        if not result.get("success", False):
+            error_msg = result.get("error", "Unknown error occurred during inference")
+            return None, f"Inference failed: {error_msg}"
 
-    vis_image = RexOmniVisualize(
-        image=image,
-        predictions=predictions,
-        font_size=font_size,
-        draw_width=draw_width,
-        show_labels=show_labels,
-    )
-    return vis_image, raw_output
+        # Get predictions and raw output
+        predictions = result["extracted_predictions"]
+        raw_output = result["raw_output"]
 
-    return None, f"Error during inference: {str(e)}"
+        # Create visualization
+        try:
+            vis_image = RexOmniVisualize(
+                image=image,
+                predictions=predictions,
+                font_size=font_size,
+                draw_width=draw_width,
+                show_labels=show_labels,
+            )
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.ipc_collect()
+            return vis_image, raw_output
+        except Exception as e:
+            return image, f"Visualization failed: {str(e)}\n\nRaw output:\n{raw_output}"
+
+    except Exception as e:
+        return None, f"Error during inference: {str(e)}"
 
 
 def update_interface(task_selection):
@@ -497,7 +508,7 @@ def load_example_image(image_path, visual_prompt_boxes=None):
         from PIL import Image
 
         # Construct full path
-        full_path = os.path.join(os.path.dirname(__file__), "..", image_path)
+        full_path = os.path.join(os.path.dirname(__file__), image_path)
         if os.path.exists(full_path):
             image = Image.open(full_path).convert("RGB")
 
@@ -912,7 +923,6 @@ if __name__ == "__main__":
         repetition_penalty=args.repetition_penalty,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
-        quantization=args.quantization,
     )
 
     print("✅ Model initialized successfully!")
@@ -926,4 +936,5 @@ if __name__ == "__main__":
         server_port=args.server_port,
         share=False,
         debug=True,
+        inbrowser=True,
     )
