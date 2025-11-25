@@ -3,12 +3,11 @@ numpy==1.26.4
 Pillow==10.4.0
 qwen_vl_utils==0.0.14
 transformers==4.51.3
-vllm==0.8.2
 accelerate==1.10.1
 flash-attn==2.7.4.post1
 gradio==4.44.1
 gradio_image_prompter==0.1.0
 pydantic==2.10.6
-pycocotools==2.0.10
-shapely==2.1.2
-gradio_bbox_annotator==0.1.1
+vllm==0.9.1 ; sys_platform != 'win32'
+triton ; sys_platform != 'win32'
+triton-windows ; sys_platform == 'win32'
