@@ -88,6 +88,7 @@ conda create -n rexomni python=3.10 -y
 conda activate rexomni
 pip install torch==2.7.0 torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
+pip install -v -e .
 ```
 
 Test Installation
