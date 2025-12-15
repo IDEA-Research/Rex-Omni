@@ -47,6 +47,17 @@
 
 <p align="center"><img src="assets/teaser.png" width="95%"></p>
 
+# Breaking News: We've just open-sourced Resophy! 🎉
+
+[Resophy](https://github.com/Mountchicken/Resophy) is an AI-powered research paper reader that revolutionizes how you explore academic papers. 🚀
+- AI Translation & Analysis: Quickly break down papers, understand core contributions, and experiment results.
+- Daily arXiv Recommendations: Filter out noise and get the most relevant papers based on your interests.
+- Vibe Coding Oriented: Built for coding agents—perfect for fast development and customization.
+- Zotero Integration: Seamlessly migrate and organize your papers with ease.
+
+Say goodbye to inefficient reading, and let AI help you stay on top of the latest research!
+
+[![Video Name](https://github.com/user-attachments/assets/bced2c0f-0d4c-4c5d-a264-47bfc533ca31)](https://github.com/user-attachments/assets/13bfb7ab-a9b6-4f09-86c2-c513a6a8f221)
 
 # News 🎉
 - [2025-10-31] We release the AWQ quantized version of Rex-Omni, which saves 50% of the storage space. [Rex-Omni-AWQ](https://huggingface.co/IDEA-Research/Rex-Omni-AWQ)
